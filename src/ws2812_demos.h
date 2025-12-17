@@ -29,6 +29,6 @@
 #include "ws2812.h"
 
 void ws2812_demos_set(ws2812_handleTypeDef *ws2812, uint8_t demo);
-void ws2812_demos_tick(ws2812_handleTypeDef *ws2812, uint16_t p1);
+void ws2812_demos_tick(ws2812_handleTypeDef *ws2812, uint16_t p1, uint8_t speed);
 
 #endif /* WS2812_DEMOS_H_ */

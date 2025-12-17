@@ -21,11 +21,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "color_values.h"
 #include "ws2812_demos.h"
+#include "arm_math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,6 +38,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define FFT_LENGTH 512
 
 /* USER CODE END PD */
 
@@ -50,9 +54,15 @@ TIM_HandleTypeDef htim3;
 DMA_HandleTypeDef hdma_tim3_ch1_trig;
 
 /* USER CODE BEGIN PV */
+uint8_t mode = 0;
+uint8_t next = 0;
+float input_fft[FFT_LENGTH];
+float output_fft[FFT_LENGTH];
+float output_fft_mag[FFT_LENGTH / 2];
 ADC_HandleTypeDef hadc1;
 ws2812_handleTypeDef ws2812;
-RGBColor led_buffer[LEDS];
+arm_rfft_fast_instance_f32 fft_instance;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -67,20 +77,7 @@ static void MX_ADC1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void set_all_leds_white(ws2812_handleTypeDef *ws2812) {
-    for (uint16_t i = 0; i < ws2812->leds; i++) {
-        // Đặt giá trị cho tất cả các LED với màu trắng (RGB: 255, 255, 255)
-        setLedValues(ws2812, i, 0, 0, 0);
-    }
-}
-void update_leds(ws2812_handleTypeDef *ws2812) {
-    uint16_t dma_buffer[BUFFER_SIZE];
-    ws2812_update_buffer(ws2812, dma_buffer);
-}
-void light_up_all_leds(ws2812_handleTypeDef *ws2812) {
-    set_all_leds_white(ws2812);  // Thiết lập tất cả LED thành màu trắng
-    update_leds(ws2812);         // Cập nhật giá trị vào buffer
-}
+
 void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim) {
 
     if (htim->Instance == TIM3) {
@@ -89,10 +86,50 @@ void HAL_TIM_PWM_PulseFinishedHalfCpltCallback(TIM_HandleTypeDef *htim) {
 }
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim) {
 
-    if (htim->Instance == TIM4) {
+    if (htim->Instance == TIM3) {
         ws2812_update_buffer(&ws2812, &ws2812.dma_buffer[BUFFER_SIZE]);
     }
 
+}
+void ws2812_demos_freq(arm_rfft_fast_instance_f32 fft_instance, ws2812_handleTypeDef *ws2812)
+{
+	uint16_t adc_value = 0;
+	  for (int i = 0; i < FFT_LENGTH; i++) {
+		  HAL_ADC_Start(&hadc1);
+		  adc_value = HAL_ADC_GetValue(&hadc1);
+		  HAL_ADC_Stop(&hadc1);
+		  input_fft[i] = ((float)adc_value - MINSOUND) / MINSOUND;
+	  }
+	  arm_rfft_fast_f32(&fft_instance, input_fft, output_fft, 0);
+	  arm_cmplx_mag_f32(output_fft, output_fft_mag, FFT_LENGTH / 2);
+
+
+	  for (int i = 1; i <= LEDS; i++)
+	  {
+		  float out = ((output_fft_mag[(i*7)]>0.85f)?output_fft_mag[(i*7)]:0);
+//		  ws2812.led[3 * i + RL] = color[(uint8_t)out][0];
+//		  ws2812.led[3 * i + GL] = color[(uint8_t)out][1];
+//		  ws2812.led[3 * i + BL] = color[(uint8_t)out][2];
+//		  ws2812.led[3 * i + RL] = out*color[i][0];
+//		  ws2812.led[3 * i + GL] = out*color[i][1];
+//		  ws2812.led[3 * i + BL] = out*color[i][2];
+		  ws2812->led[3 * i + RL] = BRIGHTNESS_ADJUST*out*50;
+		  ws2812->led[3 * i + GL] = BRIGHTNESS_ADJUST*out*50;
+		  ws2812->led[3 * i + BL] = BRIGHTNESS_ADJUST*out*50;
+	  }
+	  ws2812->is_dirty = true;
+
+}
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == GPIO_PIN_4) {
+    	mode = (mode + 1)%5;
+    	zeroLedValues(&ws2812);
+    }
+    if (GPIO_Pin == GPIO_PIN_3)
+    {
+    	next = (next + 1)%3;
+    }
 }
 /* USER CODE END 0 */
 
@@ -113,7 +150,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -130,6 +166,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  arm_rfft_fast_init_f32(&fft_instance, FFT_LENGTH);
   ws2812_init(&ws2812, &htim3, TIM_CHANNEL_1, LEDS);
   ws2812_demos_set(&ws2812, 3);
   //ws2812_demos_set(&ws2812, 1);
@@ -140,43 +177,57 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_ADC_Start(&hadc1);
-  volatile uint16_t adc_value = 0;
+  uint16_t adc_value = 0;
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)&adc_value, 1);
-  uint32_t now = 0, next_tick = 1000, loop_count = 0, next_check = 0;
+  uint32_t now = 0, next_tick = 1000;
   while (1)
   {
 	  now = uwTick;
-	  if (now < 300)
+	  if (now < 100)
 	  {
 		  zeroLedValues(&ws2812);
 		  continue;
 	  }
-	  HAL_ADC_Start(&hadc1);
-	  HAL_ADC_PollForConversion(&hadc1,0);
-	  adc_value = HAL_ADC_GetValue(&hadc1);
 
-//	  if (now >= next_check)
-//	  {
-//		  next_check = now + 2;
-//
-//	  }
-	  ws2812_demos_tick(&ws2812, adc_value);
-	  if (!(now % 10)) { // Just call every 10th loop
-		  //ws2812_demos_tick(&ws2812, adc_value);
-		  //zeroLedValues(&ws2812);
+//	  ws2812_demos_tick(&ws2812, adc_value);
+
+//	  ws2812_demos_freq(fft_instance, &ws2812, adc_value);
+	  switch (mode)
+	  {
+	  case 0:
+		  ws2812_demos_set(&ws2812, 4);
+		  ws2812_demos_tick(&ws2812, 0, next);
+		  break;
+	  case 1:
+		  ws2812_demos_set(&ws2812, 5);
+		  ws2812_demos_tick(&ws2812, 0, next);
+		  break;
+	  case 2:
+		  ws2812_demos_set(&ws2812, 2);
+		  ws2812_demos_tick(&ws2812, 0, next);
+		  break;
+	  case 3:
+		  ws2812_demos_set(&ws2812, 6);
+		  ws2812_demos_tick(&ws2812, 0, next);
+		  break;
+	  case 4:
+		  HAL_ADC_Start(&hadc1);
+		  adc_value = HAL_ADC_GetValue(&hadc1);
+		  HAL_ADC_Stop(&hadc1);
+		  ws2812_demos_set(&ws2812, 3);
+		  ws2812_demos_tick(&ws2812, adc_value, next);
+//		  if (now > next_tick && adc_value > 2150)
+//		  {
+//			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
+//			  next_tick = now + 100;
+//		  }
+		  break;
+	  case 5:
+		  ws2812_demos_freq(fft_instance, &ws2812);
+		  break;
+	  default:
 	  }
 
-//	  if (now >= next_blink) { // Every 500 ms
-////		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_7);
-//		  next_blink = now + 500;
-//	  }
-
-	  if (now >= next_tick) {
-		  loop_count = 0;
-		  next_tick = now + 1000;
-	  }
-
-	  ++loop_count;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -364,10 +415,17 @@ static void MX_GPIO_Init(void)
 /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, COM_Pin|GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : NEXT_Pin MODE_Pin */
+  GPIO_InitStruct.Pin = NEXT_Pin|MODE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : COM_Pin PA7 */
   GPIO_InitStruct.Pin = COM_Pin|GPIO_PIN_7;
@@ -375,6 +433,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */

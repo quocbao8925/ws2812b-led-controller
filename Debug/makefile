@@ -65,7 +65,7 @@ main-build: leds.elf secondary-outputs
 
 # Tool invocations
 leds.elf leds.map: $(OBJS) $(USER_OBJS) D:\Progs\STM32CubeIDE_1.17.0\Workspace\leds\STM32F407VETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "leds.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Progs\STM32CubeIDE_1.17.0\Workspace\leds\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="leds.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "leds.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Progs\STM32CubeIDE_1.17.0\Workspace\leds\STM32F407VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="leds.map" -Wl,--gc-sections -static -LC:/Users/ASUS/STM32Cube/Repository/Packs/STMicroelectronics/X-CUBE-ALGOBUILD/1.4.0/Middlewares/Third_Party/ARM/DSP/Lib --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

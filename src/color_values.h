@@ -19,9 +19,4 @@
 #define COLOR_VALUES_H_
 
 extern const uint16_t color_value[256][8];
-typedef struct {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
-} RGBColor;
 #endif /* COLOR_VALUES_H_ */

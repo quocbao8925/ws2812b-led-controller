@@ -1,2 +1,2 @@
-../src/ws2812_demos.c:42:6:ws2812_demos_set	1
-../src/ws2812_demos.c:46:6:ws2812_demos_tick	20
+../src/ws2812_demos.c:65:6:ws2812_demos_set	1
+../src/ws2812_demos.c:69:6:ws2812_demos_tick	33

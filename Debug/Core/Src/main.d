@@ -31,7 +31,9 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  C:/Users/ASUS/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.1/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/color_values.h \
  D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/ws2812_demos.h \
- D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/ws2812.h
+ D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/ws2812.h \
+ C:/Users/ASUS/STM32Cube/Repository//Packs/STMicroelectronics/X-CUBE-ALGOBUILD/1.4.0/Middlewares/Third_Party/ARM/DSP/Inc/arm_math.h \
+ C:/Users/ASUS/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.1/Drivers/CMSIS/Include/cmsis_compiler.h
 ../Core/Inc/main.h:
 C:/Users/ASUS/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.1/Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
@@ -66,3 +68,5 @@ C:/Users/ASUS/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.1/Drivers/STM32F4xx_HAL
 D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/color_values.h:
 D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/ws2812_demos.h:
 D:/Progs/STM32CubeIDE_1.17.0/Workspace/leds/src/ws2812.h:
+C:/Users/ASUS/STM32Cube/Repository//Packs/STMicroelectronics/X-CUBE-ALGOBUILD/1.4.0/Middlewares/Third_Party/ARM/DSP/Inc/arm_math.h:
+C:/Users/ASUS/STM32Cube/Repository/STM32Cube_FW_F4_V1.28.1/Drivers/CMSIS/Include/cmsis_compiler.h:

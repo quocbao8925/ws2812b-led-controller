@@ -60,6 +60,12 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 #define LED_CNT 20
+#define NEXT_Pin GPIO_PIN_3
+#define NEXT_GPIO_Port GPIOE
+#define NEXT_EXTI_IRQn EXTI3_IRQn
+#define MODE_Pin GPIO_PIN_4
+#define MODE_GPIO_Port GPIOE
+#define MODE_EXTI_IRQn EXTI4_IRQn
 #define ADC_Pin GPIO_PIN_0
 #define ADC_GPIO_Port GPIOA
 #define COM_Pin GPIO_PIN_5
