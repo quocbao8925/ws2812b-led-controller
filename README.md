@@ -16,17 +16,3 @@ To achieve the precise **800kHz** timing required by WS2812B:
     * Request: `TIMx_CHx` (Corresponding to your PWM channel).
     * Direction: `Memory To Peripheral`.
     * Priority: `High`.
-
-## 🚀 Usage
-
-```c
-#include "ws2812.h"
-
-// 1. Initialization
-ws2812_init();
-
-// 2. Set Color (Index, R, G, B)
-ws2812_set_pixel(0, 255, 0, 0); // Set LED 0 to Red
-
-// 3. Update Strip (Send data via DMA)
-ws2812_update();
